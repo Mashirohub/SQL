@@ -1,0 +1,176 @@
+--1.
+select EmployeeID, TitleOfCourtesy,FirstName,LastName
+from Employees
+where country = 'usa'
+--2.
+select *
+from products
+where CategoryID in (1,2,3) and UnitPrice BETWEEN 100 and 200
+--3.
+select country, city, CompanyName, ContactName, Phone
+from customers
+where Region = 'WA' or Region = 'WY'
+--4.
+select *
+from Products
+where (CategoryID=1 and UnitPrice<=20)
+    or(CategoryID=8 and UnitPrice>=150)
+--5.
+select  CompanyName
+from Customers
+where fax is Null
+order by CompanyName
+--6.
+select *
+from Customers
+where CompanyName like '%come'
+
+
+
+select Region, Country, City, CompanyName, Phone
+from Customers
+order by 1asc, 2asc, 3asc
+--
+select 
+  ProductID as รหัสสินค้า, 
+  ProductName as ชื่อสินค้า, 
+  UnitPrice as ราคาสินค้า,
+  UnitsInStock as จำนวนสินค้า,
+  UnitPrice * UnitsInStock as ราคารวม
+from Products
+--
+select *
+from (
+  select 
+    ProductID as รหัส, 
+    ProductName as สินค้า,
+    UnitsInStock + UnitsOnOrder as จำนวนคงเหลือทั้งหมด,
+    ReorderLevel as จุดสั่งซื้อ
+  from Products
+) as T
+where จำนวนคงเหลือทั้งหมด < จุดสั่งซื้อ
+--
+select 
+  ProductID, 
+  ProductName,
+  UnitPrice, 
+  ROUND(UnitPrice * 0.07, 2) AS Vat7
+from Products
+--
+select employeeID,
+TitleOfCourtesy+FirstName+space(1)+LastNAme as [Employee Name]
+From Employees 
+
+select employeeID,
+TitleOfCourtesy+FirstName+''+LastNAme as [Employee Name]
+From Employees
+--
+--ต้องการทราบราคาในเเต่ละรายการขายสินค้า[order detail]
+select orderID,ProductID, UnitPrice*Quantity,Discount,
+        (UnitPrice*Quantity) as TotalPrice,
+       (UnitPrice*Quantity)-(UnitPrice*Quantity*Discount)as NetPrice
+from [Order Details]
+
+select orderID,ProductID, UnitPrice*Quantity,Discount,
+        (UnitPrice*Quantity) as TotalPrice,
+       UnitPrice*Quantity*(1-Discount)as NetPrice
+from [Order Details]
+--select (42.40*35)-(42.40*35*0.15)
+--
+select EmployeeID, FirstName, BirthDate, Datediff(YEAR,BirthDate,getdate()) Age,
+       HireDate,DATEDIFF(YEAR,HireDate,GETDATE()) YearInOffice
+from Employees
+--------------------------------------
+--Aggregate Function 
+select count(*)as จำนวนสินค้า, count(productID) count,(productName),count(UnitPrice)
+from Products
+where UnitsInStock < 15
+
+select * 
+from Products
+where UnitsInStock < 15
+--จำนวนลูกค้าที่อยู่ประเทศUSA
+select count(*) as จำนวนลูกค้าUSA
+from Customers
+where Country = 'USA'
+--จำนวนพนักงานอยู่ใน London
+select count(*) as จำนวนลูกค้าLondon
+from Employees
+where City = 'london'
+--จำนวนใบสั่งชื้อที่ออกในปี 1997
+select COUNT(*)
+from Orders
+where YEAR (OrderDate) =1997
+--
+select COUNT(*)
+from [Order Details]
+where ProductID = 1
+--FUNCTION sUM
+select sum(quantity)
+from[Order Details]
+WHERE ProductID = 2
+--มูลค่าสินค้าในคลังสินค้าทั้งหมด
+select sum(UnitPrice * UnitsInStock)
+from Products
+--จำนวนสินค้ารหัส 8
+select sum(UnitsOnOrder)
+from Products
+where CategoryID = 8
+--functionmin * max
+select max(UnitPrice), min(UnitPrice)
+from [Order Details]
+where ProductID=1
+--Function everage
+--ราคาสินค้าเฉลี่ยทั้งหมด สินค้าา5
+select avg(UnitPrice), min(UnitPrice), max(UnitPrice)
+from [Order Details]
+where productId = 5
+--Group By
+select Country, COUNT(*)as [Num of Country]
+from Customers
+Group by Country
+--นหัสประเภทสินค้า ราคาเฉลี่ย
+select CategoryID,avg(UnitPrice),min(UnitPrice),max(UnitPrice)
+from Products
+Group by CategoryID
+--iายการสินค้าใบสั่งชื้อทุกใบ 10250
+select OrderID, count(*)
+from [Order Details]
+Group by OrderID
+--ประเทศเเละใบสั่งชื้อที่ส่งสินค้า
+select ShipCountry,count(*)as 'Num of Country'
+from Orders
+group by ShipCountry
+Having count(*)>100
+--เฉพาะในใบสั่งชื้อที่มีสินค้ามากกว่า 3 ชนิด
+select OrderID, count(*)
+from [Order Details]
+Group by OrderID
+Having count(*)>3
+--
+select Country,count(*)as 'Num of Country'
+from Customers
+group by Country
+Having count(*)<5
+--ข้อมูลรหัสใบสั่งชื้อ ยอดเงินรวมในใบสั่งชื้อ เเสดงเฉพาะใบสั่งชื้อที่มียอดเงินน้อยกว่า100[order details]
+select OrderID, sum(UnitPrice*Quantity*(1-Discount))
+from [Order Details]
+group by OrderID
+Having sum(UnitPrice*Quantity*(1-Discount)) < 100
+--ประเทศที่มีจำนวนใบสั่งชื้อที่ส่งสินค้าไปปลายทางตำ่กว่า 20 รายการ ในปี 1997
+select ShipCountry,count(OrderID) as จำนวนใบสั่งซื้อ
+from Orders
+where year(OrderDate) = 1997
+group by ShipCountry
+having count(OrderID) < 20
+order by count(*)desc
+--ใบสั่งชื้อใดมียอดขายสูงที่สุด เเสดงรหัสใบสั่งชื้อเเละยอดขาย
+select top 1 OrderID, sum(UnitPrice*Quantity*(1-Discount))as total
+from [Order Details]
+group by OrderID
+order by 2 desc
+--ใบสั่งชื้อใดมียอดขายตำ่ที่สุด เเสดงรหัสใบสั่งชื้อเเละยอดขายตำ่สุด 5 อันดับ
+select top 5 OrderID, sum(UnitPrice*Quantity*(1-Discount))as total
+from [Order Details]
+group by OrderID
+order by 2 asc
