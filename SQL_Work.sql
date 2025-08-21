@@ -90,3 +90,50 @@ JOIN [Order Details] AS od
 ON p.ProductID = od.ProductID
 GROUP BY p.ProductID, p.ProductName
 ORDER BY SUM(od.Quantity) DESC;
+
+--ต้องการรหัสสินค้า ซื่อสินค้า ที่ nancy ขายได้ ทั้งหมด เรียงตามลำดับสินค้า
+
+
+SELECT DISTINCT
+    p.ProductID   AS รหัสสินค้า,
+    p.ProductName AS ชื่อสินค้า
+FROM Employees e
+JOIN Orders o 
+    ON e.EmployeeID = o.EmployeeID
+JOIN [Order Details] od
+    ON o.OrderID = od.OrderID
+JOIN Products p
+    ON p.ProductID = od.ProductID
+WHERE e.FirstName = 'Nancy'
+ORDER BY p.ProductID;
+
+---ต้องการชื่อบริษัทลูกค้าชื่อ Around the horn ชื่อสินค้ามาจากประเทศอะไรบ้าง
+
+select distinct
+    s.Country        as ประเทศที่มาของสินค้า
+from Customers c
+JOIN Orders o on c.CustomerID = o.CustomerID
+JOIN [Order Details] od on o.OrderID = od.OrderID
+JOIN Products p on p.ProductID = od.ProductID
+JOIN Suppliers s on s.SupplierID = p.SupplierID
+WHERE c.CompanyName = 'Around the Horn'
+
+--บริษัทลูกค้าชื่อ Around the horn ซื้อสินค้าอะไรบ้าง จำนวนเท่าใด
+
+SELECT p.ProductID   AS ชื่อลูกค้า, p.ProductName   AS ชื่อสินค้า, SUM(od.Quantity) AS จำนวนที่ซื้อ
+from Customers c 
+join Orders o on c.CustomerID = o.CustomerID 
+join [Order Details] od on o.OrderID = od.OrderID
+join Products p on od.ProductID = p.ProductID
+WHERE c.CompanyName = 'Around the Horn'
+GROUP BY c.CompanyName, p.ProductID, p.ProductName
+ORDER BY p.ProductID
+
+--ต้องการหมายเลขใบสั่งซื้อ ชื่อพนักงาน เเละยอดขายในใบสั่งซื้อนั้น
+SELECT o.OrderID      AS หมายเลขใบสั่งซื้อ, e.FirstName + ' ' + e.LastName AS ชื่อพนักงาน,
+round(sum(od.Quantity * od.UnitPrice * (1 - od.Discount)),2) TotalCash
+FROM Orders o
+JOIN Employees e ON o.EmployeeID = e.EmployeeID
+JOIN [Order Details] od ON o.OrderID = od.OrderID
+GROUP BY o.OrderID, e.FirstName, e.LastName
+ORDER BY o.OrderID
