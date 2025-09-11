@@ -47,3 +47,15 @@ VALUES('ปลาเเดกบอง', 1.5,12)
 Update Shippers
 set Phone = '084-005555452'
 where ShipperID = 6
+--
+update Products
+set UnitsInStock = UnitsInStock+100
+where ProductID = 1
+
+select * from Products
+
+--
+update Customers
+set City = 'อุดรธานี', Country = 'Thailand'
+where CustomerID = 'A00001'
+--
