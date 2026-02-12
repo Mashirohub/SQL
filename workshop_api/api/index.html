@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enterprise Product Dashboard</title>
+
+<style>
+:root{
+ --primary:#6366f1;
+ --bg:#f1f5f9;
+ --card:rgba(255,255,255,.6);
+ --text:#111;
+ --danger:#ef4444;
+}
+
+.dark{
+ --bg:#0f172a;
+ --card:rgba(30,41,59,.6);
+ --text:#f1f5f9;
+}
+
+*{box-sizing:border-box;font-family:Segoe UI,sans-serif}
+body{
+ margin:0;
+ background:linear-gradient(135deg,#667eea,#764ba2);
+ background-size:400% 400%;
+ animation:bgmove 12s ease infinite;
+ color:var(--text);
+ transition:.3s;
+}
+@keyframes bgmove{
+0%{background-position:0% 50%}
+50%{background-position:100% 50%}
+100%{background-position:0% 50%}
+}
+
+.app{
+ display:flex;
+ min-height:100vh;
+}
+
+.sidebar{
+ width:220px;
+ backdrop-filter:blur(20px);
+ background:rgba(0,0,0,.2);
+ color:white;
+ padding:20px;
+}
+.sidebar h2{margin-bottom:20px}
+.sidebar button{
+ width:100%;
+ margin-bottom:10px;
+ background:rgba(255,255,255,.2);
+ border:none;
+ padding:10px;
+ border-radius:8px;
+ color:white;
+ cursor:pointer;
+}
+
+.main{
+ flex:1;
+ padding:30px;
+}
+
+.glass{
+ backdrop-filter:blur(20px);
+ background:var(--card);
+ border-radius:20px;
+ padding:20px;
+ box-shadow:0 10px 40px rgba(0,0,0,.2);
+ margin-bottom:20px;
+}
+
+.topbar{
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ flex-wrap:wrap;
+ gap:10px;
+}
+
+input{
+ padding:8px;
+ border-radius:8px;
+ border:none;
+ outline:none;
+}
+
+button{
+ padding:8px 14px;
+ border:none;
+ border-radius:8px;
+ background:var(--primary);
+ color:white;
+ cursor:pointer;
+ font-weight:bold;
+}
+
+.delete-btn{background:var(--danger)}
+
+table{
+ width:100%;
+ border-collapse:collapse;
+ margin-top:15px;
+}
+th,td{
+ padding:10px;
+ text-align:center;
+}
+th{
+ cursor:pointer;
+ background:var(--primary);
+ color:white;
+}
+
+tr{
+ transition:.2s;
+}
+tr:hover{
+ background:rgba(255,255,255,.2);
+}
+
+.cards{
+ display:grid;
+ grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+ gap:15px;
+ margin-bottom:20px;
+}
+
+.kpi{
+ padding:20px;
+ border-radius:15px;
+ background:var(--card);
+ backdrop-filter:blur(15px);
+ box-shadow:0 8px 20px rgba(0,0,0,.15);
+}
+
+.pagination{
+ text-align:center;
+ margin-top:15px;
+}
+.pagination button{
+ margin:2px;
+ background:#94a3b8;
+}
+
+.toast{
+ position:fixed;
+ bottom:20px;
+ right:20px;
+ background:#22c55e;
+ color:white;
+ padding:12px 20px;
+ border-radius:10px;
+ opacity:0;
+ transform:translateY(20px);
+ transition:.4s;
+}
+
+.toast.show{
+ opacity:1;
+ transform:translateY(0);
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<div class="sidebar">
+<h2>🚀 Admin</h2>
+<button onclick="toggleDark()">🌓 Dark Mode</button>
+<button onclick="loadProducts()">🔄 Refresh</button>
+</div>
+
+<div class="main">
+
+<div class="cards">
+<div class="kpi">📦 สินค้าทั้งหมด: <b id="totalProducts">0</b></div>
+<div class="kpi">💰 มูลค่ารวม: <b id="totalValue">0</b></div>
+<div class="kpi">📊 ราคาเฉลี่ย: <b id="avgPrice">0</b></div>
+</div>
+
+<div class="glass">
+
+<div class="topbar">
+<h2>Product Management</h2>
+<div>
+<input type="text" id="search" placeholder="ค้นหา...">
+</div>
+</div>
+
+<div style="margin-top:15px; display:flex; gap:10px;">
+<input type="text" id="name" placeholder="ชื่อสินค้า">
+<input type="number" id="price" placeholder="ราคา">
+<button onclick="addProduct()">เพิ่มสินค้า</button>
+</div>
+
+<table>
+<thead>
+<tr>
+<th onclick="sortTable('id')">ID ⬍</th>
+<th onclick="sortTable('product_name')">ชื่อสินค้า ⬍</th>
+<th onclick="sortTable('price')">ราคา ⬍</th>
+<th>จัดการ</th>
+</tr>
+</thead>
+<tbody id="tableBody"></tbody>
+</table>
+
+<div class="pagination" id="pagination"></div>
+
+</div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API_URL="https://hosting.udru.ac.th/~it67040233131/workshop_api/api/products.php";
+let products=[];
+let currentPage=1;
+let rowsPerPage=5;
+let currentSort={key:null,asc:true};
+
+function toggleDark(){
+ document.body.classList.toggle("dark");
+}
+
+function showToast(msg){
+ const toast=document.getElementById("toast");
+ toast.innerText=msg;
+ toast.classList.add("show");
+ setTimeout(()=>toast.classList.remove("show"),2000);
+}
+
+function updateKPI(){
+ document.getElementById("totalProducts").innerText=products.length;
+ let total=products.reduce((sum,p)=>sum+parseFloat(p.price),0);
+ document.getElementById("totalValue").innerText=total.toFixed(2);
+ document.getElementById("avgPrice").innerText=
+ (products.length? total/products.length:0).toFixed(2);
+}
+
+function loadProducts(){
+fetch(API_URL)
+.then(res=>res.json())
+.then(data=>{
+products=data;
+updateKPI();
+renderTable();
+});
+}
+
+function renderTable(){
+let filtered=products.filter(p=>
+p.product_name.toLowerCase().includes(
+document.getElementById("search").value.toLowerCase()
+));
+
+if(currentSort.key){
+filtered.sort((a,b)=>{
+if(currentSort.asc)
+return a[currentSort.key]>b[currentSort.key]?1:-1;
+else
+return a[currentSort.key]<b[currentSort.key]?1:-1;
+});
+}
+
+let start=(currentPage-1)*rowsPerPage;
+let paginated=filtered.slice(start,start+rowsPerPage);
+
+let html="";
+paginated.forEach(p=>{
+html+=`
+<tr>
+<td>${p.id}</td>
+<td>${p.product_name}</td>
+<td>${p.price}</td>
+<td>
+<button onclick="editProduct(${p.id},'${p.product_name}',${p.price})">แก้ไข</button>
+<button class="delete-btn" onclick="deleteProduct(${p.id})">ลบ</button>
+</td>
+</tr>`;
+});
+document.getElementById("tableBody").innerHTML=html;
+
+renderPagination(filtered.length);
+}
+
+function renderPagination(total){
+let pages=Math.ceil(total/rowsPerPage);
+let html="";
+for(let i=1;i<=pages;i++){
+html+=`<button onclick="changePage(${i})">${i}</button>`;
+}
+document.getElementById("pagination").innerHTML=html;
+}
+
+function changePage(p){
+currentPage=p;
+renderTable();
+}
+
+function sortTable(key){
+if(currentSort.key===key){
+currentSort.asc=!currentSort.asc;
+}else{
+currentSort.key=key;
+currentSort.asc=true;
+}
+renderTable();
+}
+
+function addProduct(){
+let name=document.getElementById("name").value;
+let price=document.getElementById("price").value;
+
+fetch(API_URL,{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({product_name:name,price:price})
+})
+.then(()=>{
+showToast("เพิ่มสำเร็จ 🎉");
+loadProducts();
+});
+}
+
+function editProduct(id,name,price){
+let newName=prompt("ชื่อสินค้า:",name);
+let newPrice=prompt("ราคา:",price);
+
+fetch(API_URL,{
+method:"PUT",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({id:id,product_name:newName,price:newPrice})
+})
+.then(()=>{
+showToast("แก้ไขสำเร็จ ✅");
+loadProducts();
+});
+}
+
+function deleteProduct(id){
+if(!confirm("ลบสินค้านี้หรือไม่?"))return;
+
+fetch(API_URL,{
+method:"DELETE",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({id:id})
+})
+.then(()=>{
+showToast("ลบสำเร็จ ❌");
+loadProducts();
+});
+}
+
+document.getElementById("search").addEventListener("input",()=>{
+currentPage=1;
+renderTable();
+});
+
+loadProducts();
+</script>
+
+</body>
+</html>
